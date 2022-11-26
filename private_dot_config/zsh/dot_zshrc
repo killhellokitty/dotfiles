@@ -1,0 +1,205 @@
+#!/usr/bin/zsh
+
+#    ▒███████▒  ██████  ██░ ██  ██▀███   ▄████▄  
+#    ▒ ▒ ▒ ▄▀░▒██    ▒ ▓██░ ██▒▓██ ▒ ██▒▒██▀ ▀█  
+#    ░ ▒ ▄▀▒░ ░ ▓██▄   ▒██▀▀██░▓██ ░▄█ ▒▒▓█    ▄ 
+#      ▄▀▒   ░  ▒   ██▒░▓█ ░██ ▒██▀▀█▄  ▒▓▓▄ ▄██▒
+#    ▒███████▒▒██████▒▒░▓█▒░██▓░██▓ ▒██▒▒ ▓███▀ ░
+#    ░▒▒ ▓░▒░▒▒ ▒▓▒ ▒ ░ ▒ ░░▒░▒░ ▒▓ ░▒▓░░ ░▒ ▒  ░
+#    ░░▒ ▒ ░ ▒░ ░▒  ░ ░ ▒ ░▒░ ░  ░▒ ░ ▒░  ░  ▒   
+#    ░ ░ ░ ░ ░░  ░  ░   ░  ░░ ░  ░░   ░ ░        
+#      ░ ░          ░   ░  ░  ░   ░     ░ ░      
+#    ░                                  ░        
+
+##!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!##
+## ⚠️ WARNING:                                                        ##
+# Don't manually `source` your .zshrc file! It can have unexpected    ##
+# side effects. Instead, to safely apply changes, use `znap restart`. ##
+##!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!##
+
+#set -x ## Verbose Debuging
+#################################################
+# SOURCE ZNAP at the start of your .zshrc file. #
+#################################################
+
+
+# {{{
+## Base16 Shell ##
+#
+#[ -n "$PS1" ] && \
+#    [ -s "$BASE16_SHELL/profile_helper.sh" ] && \
+#        source ~/.config/base16-shell/profile_helper.sh
+##
+# }}}
+
+
+# {{{
+## Colors, makes color constants available ##
+#
+autoload -U colors && colors
+##
+# }}}
+
+
+# {{{
+## Move/Copie/Link ##
+    # zmv lets you batch rename (or copy or link) files by using pattern matching.
+    # https://zsh.sourceforge.io/Doc/Release/User-Contributions.html#index-zmv
+autoload -Uz zmv
+alias zmv='zmv -Mv'
+alias zcp='zmv -Cv'
+alias zln='zmv -Lv'
+##
+# }}}
+
+
+# {{{
+## Source Zsh.d ##
+#
+	# The construct below is what Zsh calls an anonymous function; most other
+	# languages would call this a lambda or scope function. It gets called right
+	# away with the arguments provided and is then discarded.
+	# Here, it enables us to use scoped variables in our dotfiles.
+() {
+  	# `local` sets the variable's scope to this function and its descendendants.
+  	#  local gitdir=~/Git  # Where to keep repos and plugins
+  local gitdir=~/.config/zsh/plugins
+  	# Load all of the files in rc.d that start with <number>- and end in .zsh
+  	# (n) sorts the results in numerical order.
+  	# <-> is an open-ended range. It matches any non-negative integer.
+  	# <1-> matches any integer >= 1. <-9> matches any integer <= 9.
+  	# <1-9> matches any integer that's >= 1 and <= 9.
+  local file=
+  for file in $ZDOTDIR/zsh.d/<->-*.zsh(n); do
+    . $file
+  done
+} "$@"
+	# $@ expands to all the arguments that were passed to the current context (in
+	# this case, to `zsh` itself).
+	# "Double quotes" ensures that empty arguments '' are preserved.
+	# It's a good practice to pass "$@" by default. You'd be surprised at all the
+	# bugs you avoid this way.
+##
+# }}}
+
+
+############################
+# Additional Configuration #
+############################
+
+
+# {{{
+## Silence 'Picked up JDK_JAVA_OPTIONS' message on command line ##
+#
+SILENT_JAVA_OPTIONS="${JDK_JAVA_OPTIONS}"
+unset JDK_JAVA_OPTIONS
+alias java='java "${SILENT_JAVA_OPTIONS}"'
+##
+# }}}
+
+
+# {{{
+## workaround for handling TERM variable in multiple tmux sessions properly
+#
+if [[ -n ${TMUX} && -n ${commands[tmux]} ]];then
+	case $(tmux showenv TERM 2>/dev/null) in
+		*256color) ;&
+		TERM=fbterm)
+			TERM=screen-256color ;;
+		*)
+			TERM=screen
+	esac
+fi
+##
+# }}}
+
+
+# {{{
+## Terminal Window and Tabs ##
+#
+if [[ $- =~ i ]]; then
+source "$HOME/.config/zsh/zcustom/term-tabs.zsh"
+fi
+##
+# }}}
+
+
+# {{{
+## Umask
+#
+# Set the "umask" (see "man umask"):
+# ie read and write for the owner only.
+# umask 002 # relaxed   -rwxrwxr-x
+# umask 022 # cautious  -rwxr-xr-x
+# umask 027 # uptight   -rwxr-x---
+# umask 077 # paranoid  -rwx------
+# umask 066 # bofh-like -rw-------
+umask 027
+##
+# }}}
+
+
+# {{{
+## If root set unmask to 022 to prevent new files being created group and world writable
+if (( EUID == 0 )); then
+	umask 022
+fi
+
+# {{{
+## Powerlevel10k Prompt Customization File ##
+#
+[[ ! -f ~/.config/zsh/.p10k.zsh ]] || source ~/.config/zsh/.p10k.zsh
+	# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+##
+# }}}
+
+
+#############################################
+### !!!  Must be final items in zshrc !!! ###
+#############################################
+##					###					   ##
+#					 #						#
+
+
+# {{{
+## Syntax Highlight variables ##
+#
+source "$ZDOTDIR/zcustom/themes/zsh-syntax-highlighting.sh"
+##
+# }}}
+
+
+# {{{
+## ZSH-Syntax-Highlight(-URL) plugins ##
+#source "$ZDOTDIR/zcustom/highlighter_clones/zsh-url-highlighter"
+#
+source "$ZDOTDIR/zcustom/highlighter_clones/zsh-syntax-highlighting/zsh-syntax-highlighting.plugin.zsh" 
+#'/home/jo-shva/.config/zsh/plugins/zsh-syntax-highlighting/highlighters' && source /home/jo-shva/.config/zsh/plugins/zsh-url-highlighter/url/url-highlighter.zsh
+##
+#
+
+
+#mv "$ZDOTDIR/plugins/zsh-url-highlighter" "$ZDOTDIR/zcustom/highlighter_clone"
+#mv "$ZDOTDIR/plugins/zsh-syntax-highlighting" "$ZDOTDIR/zcustom/highlighter_clone"
+#ln -s "$ZDOTDIR/zcustom/highlighter_clone/zsh-url-highlighter/url" "$ZDOTDIR/zcustom/highlighter_clone/zsh-syntax-highlighting/highlighters"
+
+#mv "$ZDOTDIR/plugins/zsh-url-highlighter/url" && "$ZDOTDIR/plugins/zsh-syntax-highlighting/highlighters" \
+#znap clone zsh-users/zsh-syntax-highlighting && \
+# }}}
+
+
+# {{{
+## ZSH Terminal Calculator ##
+#
+	# must be run after sourcing zsh-syntax-highlight.
+    # '=' Alias to run comandline calc plugin.
+zmodload -F zsh/parameter p:aliases
+autoload -Uz '='
+#
+(( "${+aliases[=]}" ))
+#
+aliases[=]='noglob __calc_plugin'
+#
+aliases[calc]='noglob __calc_plugin'
+##
+# }}}
